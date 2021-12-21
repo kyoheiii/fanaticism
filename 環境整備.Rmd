@@ -1,0 +1,20 @@
+---
+title: "環境整備"
+author: "Kyohei ITO"
+date: "2021/12/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# フォルダ作成
+
+https://plaza.umin.ac.jp/shoei05/wp/index.php/2020/10/25/165/
+
+terminal上で実行
+mkdir {data,thesis,analysis,function,materials}
+
+
+
