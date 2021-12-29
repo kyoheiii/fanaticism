@@ -1,0 +1,25 @@
+---
+title: "データ分析1"
+author: "Kyohei ITO"
+date: "12/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+パッケージの読み込み
+
+```{r}
+
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semTools)
+library(semPlot)
+
+```
+
