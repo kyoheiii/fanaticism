@@ -23,3 +23,24 @@ library(semPlot)
 
 ```
 
+データの読み込み
+
+```{r}
+guess_encoding("/home/rstudio/fanaticism/data/haiyu.csv")
+
+Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
+Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
+Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
+Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
+Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
+
+```
+
+相関係数行列
+```{r}
+library(GGally)
+
+
+```
+
+
