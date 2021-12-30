@@ -34,12 +34,19 @@ Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(en
 Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
 Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
 
+
+
 ```
 
 相関係数行列
 ```{r}
 library(GGally)
 
+corm = Data_m %>% select(-(1:14)) %>% cor()
+cors = Data_s %>% select(-(1:14)) %>% cor()
+corh = Data_h %>% select(-(1:14)) %>% cor()
+cori = Data_i %>% select(-(1:14)) %>% cor()
+coro = Data_o %>% select(-(1:14)) %>% cor()
 
 ```
 
