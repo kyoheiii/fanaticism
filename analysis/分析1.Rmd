@@ -34,19 +34,80 @@ Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(en
 Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
 Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
 
+#group列の追加
+
+Data_m = mutate(Data_m, group = 1)
+Data_s = mutate(Data_m, group = 2)
+Data_h = mutate(Data_h, group = 3)
+Data_i = mutate(Data_i, group = 4)
+Data_o = mutate(Data_m, group = 5)
+
+#DataFrameの結合
+
+Data = rbind(Data_m, Data_s, Data_h, Data_i, Data_o)
+
+#ダミー項目の削除
+
+Data = select(Data, -"Q.13-m3")
+
+
+#逆転項目の修正
+
+Data = mutate(Data, `Q.5-m8` = (8-`Q.5-m8`),
+                `Q.8-m6` = (8-`Q.8-m6`),
+                `Q.9-m10` = (8-`Q.9-m10`),
+                `Q.16-m3` = (8-`Q.16-m3`),
+                `Q.17-m1` = (8-`Q.17-m1`))
+
+#不必要な項目の削除
+
+Data = select(Data, -(131:142))
+
 
 
 ```
 
 相関係数行列
 ```{r}
-library(GGally)
 
-corm = Data_m %>% select(-(1:14)) %>% cor()
-cors = Data_s %>% select(-(1:14)) %>% cor()
-corh = Data_h %>% select(-(1:14)) %>% cor()
-cori = Data_i %>% select(-(1:14)) %>% cor()
-coro = Data_o %>% select(-(1:14)) %>% cor()
+corD = Data %>% select(-(1:14)) %>% cor()
+write.csv(corD, "cor.csv")
+
+```
+
+
+探索的因子分析
+
+ファン心理
+
+平行分析
+```{r}
+Data %>% select((15:87)) %>% 
+  fa.parallel()
+
+```
+
+ガットマン基準
+```{r}
+corx = cor(select(Data,(15:87)))
+eigen(corx)$values
+
+```
+
+```{r}
+
+fa.result = fa(select(Data,(15:87)),nfactors=7,fm="ml",rotate="promax",scores=TRUE)
+print(fa.result$loadings, digits = 3, sort=TRUE)
+
+```
+
+
+
+ファン行動
+
+```{r}
+
+
 
 ```
 
