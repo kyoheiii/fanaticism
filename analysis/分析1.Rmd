@@ -96,19 +96,180 @@ eigen(corx)$values
 
 ```{r}
 
-fa.result = fa(select(Data,(15:87)),nfactors=7,fm="ml",rotate="promax",scores=TRUE)
-print(fa.result$loadings, digits = 3, sort=TRUE)
+fa.result = fa(select(Data,(15:87)),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result$loadings, "fa11.csv")
+#print(fa.result$loadings, digits = 3, sort=TRUE,cutoff=0)
 
 ```
+```{r}
+fa.result1 = fa(select(Data,(15:87),-`Q.5-m8`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result1$loadings, "fa12.csv")
+```
 
+```{r}
+fa.result2 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result2$loadings, "fa13.csv")
+```
 
+```{r}
+fa.result3 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result3$loadings, "fa14.csv")
+```
+
+```{r}
+fa.result4 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result4$loadings, "fa15.csv")
+```
+
+```{r}
+fa.result5 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result5$loadings, "fa16.csv")
+```
+
+```{r}
+fa.result6 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result6$loadings, "fa17.csv")
+```
+
+```{r}
+fa.result7 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result7$loadings, "fa18.csv")
+```
+
+```{r}
+fa.result8 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result8$loadings, "fa19.csv")
+```
+
+```{r}
+fa.result9 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result9$loadings, "fa110.csv")
+```
+
+```{r}
+fa.result10 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result10$loadings, "fa111.csv")
+```
+
+```{r}
+fa.result11 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`,-`Q.11-m1`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result11$loadings, "fa112.csv")
+```
+
+```{r}
+fa.result12 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`,-`Q.11-m1`,-`Q.8-m3`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result12$loadings, "fa113.csv")
+```
+
+```{r}
+fa.result13 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`,-`Q.11-m1`,-`Q.8-m3`,-`Q.8-m2`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result13$loadings, "fa114.csv")
+```
+
+```{r}
+fa.result14 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`,-`Q.11-m1`,-`Q.8-m3`,-`Q.8-m2`,-`Q.10-m10`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result14$loadings, "fa115.csv")
+```
+
+```{r}
+fa.result15 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,-`Q.8-m6`,-`Q.11-m4`,-`Q.11-m3`,-`Q.11-m2`,-`Q.8-m5`,-`Q.8-m4`,-`Q.11-m1`,-`Q.8-m3`,-`Q.8-m2`,-`Q.10-m10`,-`Q.9-m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result15$loadings, "fa116.csv")
+```
 
 ファン行動
 
 ```{r}
-
-
+corx2 = cor(select(Data,(99:118)))
+eigen(corx2)$values
 
 ```
 
+```{r}
+fa.result21 = fa(select(Data,(99:118)),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result21$loadings, "fa201.csv")
+
+```
+
+```{r}
+fa.result22 = fa(select(Data,(99:118),-`Q.14-m6`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result22$loadings, "fa202.csv")
+
+```
+
+```{r}
+fa.result23 = fa(select(Data,(99:118),-`Q.14-m6`,-`Q.15-m1`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result23$loadings, "fa203.csv")
+
+```
+
+```{r}
+fa.result24 = fa(select(Data,(99:118),-`Q.14-m6`,-`Q.15-m1`,-`Q.14-m5`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result24$loadings, "fa204.csv")
+
+```
+
+```{r}
+fa.result25 = fa(select(Data,(99:118),-`Q.14-m6`,-`Q.15-m1`,-`Q.14-m5`,-`Q.15-m2`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result25$loadings, "fa205.csv")
+```
+
+```{r}
+fa.result26 = fa(select(Data,(99:118),-`Q.14-m6`,-`Q.15-m1`,-`Q.14-m5`,-`Q.15-m2`,-`Q.14-m9`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result26$loadings, "fa206.csv")
+```
+
+
+クロンバックα
+
+```{r}
+#ファン心理
+alpha1 = select(Data,"Q.5-m1","Q.5-m2","Q.5-m3","Q.5-m4","Q.5-m5","Q.5-m6","Q.5-m7","Q.5-m9","Q.5-m10","Q.6-m1","Q.6-m2","Q.6-m3") %>% alpha()
+alpha1$total
+
+alpha2 = select(Data,"Q.6-m4","Q.6-m5","Q.6-m6","Q.6-m7","Q.6-m8","Q.6-m9","Q.6-m10","Q.7-m1","Q.7-m2","Q.7-m3","Q.7-m4","Q.7-m5","Q.7-m6") %>% alpha()
+alpha2$total
+
+alpha3 = select(Data,"Q.8-m7","Q.8-m8","Q.8-m9","Q.8-m10","Q.9-m1","Q.9-m2","Q.9-m3") %>% alpha()
+alpha3$total
+
+alpha4 = select(Data,"Q.11-m5","Q.11-m6","Q.11-m7","Q.11-m8","Q.11-m9","Q.11-m10","Q.8-m1") %>% alpha()
+alpha4$total
+
+alpha5 = select(Data,"Q.9-m5","Q.9-m6","Q.9-m7","Q.9-m8","Q.9-m9","Q.10-m1","Q.10-m2","Q.10-m3") %>% alpha()
+alpha5$total
+
+
+alpha6 = select(Data,"Q.7-m7","Q.7-m8","Q.7-m9","Q.7-m10") %>% alpha()
+alpha6$total
+
+alpha7 = select(Data,"Q.12-m1","Q.12-m2","Q.12-m3") %>% alpha()
+alpha7$total
+
+alpha8 = select(Data,"Q.10-m5","Q.10-m6","Q.10-m7","Q.10-m8") %>% alpha()
+alpha8$total
+
+
+```
+```{r}
+#ファン行動
+alpha9 = select(Data,"Q.14-m4","Q.14-m7","Q.14-m10") %>% alpha()
+alpha9$total
+
+alpha10 = select(Data,"Q.14-m1","Q.14-m2","Q.14-m3") %>% alpha()
+alpha10$total
+
+alpha11 = select(Data,"Q.14-m8","Q.15-m7","Q.15-m8") %>% alpha()
+alpha11$total
+
+alpha12 = select(Data,"Q.15-m3","Q.15-m4","Q.15-m5","Q.15-m6") %>% alpha()
+alpha12$total
+
+alpha12 = select(Data,"Q.15-m3","Q.15-m4","Q.15-m5","Q.15-m6") %>% alpha()
+alpha12$total
+
+alpha13 = select(Data,"Q.15-m9","Q.15-m10") %>% alpha()
+alpha13$total
+
+
+```
 
