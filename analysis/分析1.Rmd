@@ -26,8 +26,6 @@ library(semPlot)
 データの読み込み
 
 ```{r}
-guess_encoding("/home/rstudio/fanaticism/data/haiyu.csv")
-
 Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
 Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
 Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
@@ -176,7 +174,7 @@ fa.result15 = fa(select(Data,(15:87),-`Q.5-m8`,-`Q.9-m10`,-`Q.10-m9`,-`Q.10-m4`,
 write.csv(fa.result15$loadings, "fa116.csv")
 ```
 
-ファン行動
+ファン行動（5因子）
 
 ```{r}
 corx2 = cor(select(Data,(99:118)))
@@ -219,6 +217,49 @@ write.csv(fa.result26$loadings, "fa206.csv")
 ```
 
 
+ファン行動（3因子）
+```{r}
+fa.result31 = fa(select(Data,(99:118)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result31$loadings, "fa301.csv")
+
+```
+
+```{r}
+fa.result32 = fa(select(Data,(99:118),-`Q.15-m9`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result32$loadings, "fa302.csv")
+
+```
+
+```{r}
+fa.result33 = fa(select(Data,(99:118),-`Q.15-m9`, -`Q.15-m10`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result33$loadings, "fa303.csv")
+
+```
+
+```{r}
+fa.result34 = fa(select(Data,(99:118),-`Q.15-m9`, -`Q.15-m10` , -`Q.15-m2`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result34$loadings, "fa304.csv")
+
+```
+
+```{r}
+fa.result35 = fa(select(Data,(99:118),-`Q.15-m9`, -`Q.15-m10` , -`Q.15-m2`, -`Q.14-m7`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result35$loadings, "fa305.csv")
+
+```
+
+```{r}
+fa.result36 = fa(select(Data,(99:118),-`Q.15-m9`, -`Q.15-m10` , -`Q.15-m2`, -`Q.14-m7`, -`Q.15-m3`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result36$loadings, "fa306.csv")
+
+```
+
+```{r}
+fa.result37 = fa(select(Data,(99:118),-`Q.15-m9`, -`Q.15-m10` , -`Q.15-m2`, -`Q.14-m7`, -`Q.15-m3`,-`Q.15-m7`),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result37$loadings, "fa307.csv")
+
+```
+
 クロンバックα
 
 ```{r}
@@ -250,6 +291,8 @@ alpha8$total
 
 
 ```
+
+
 ```{r}
 #ファン行動
 alpha9 = select(Data,"Q.14-m4","Q.14-m7","Q.14-m10") %>% alpha()
@@ -269,6 +312,21 @@ alpha13$total
 
 
 ```
+
+```{r}
+#ファン行動（3因子）
+alpha14 = select(Data,"Q.14-m1","Q.14-m2","Q.14-m3","Q.14-m4","Q.14-m5","Q.14-m6","Q.14-m10","Q.15-m1") %>% alpha()
+alpha14$total
+
+alpha15 = select(Data,"Q.15-m4","Q.15-m5","Q.15-m6","Q.15-m8") %>% alpha()
+alpha15$total
+
+alpha16 = select(Data,"Q.14-m8","Q.14-m9") %>% alpha()
+alpha16$total
+
+
+```
+
 
 構造方程式モデリング（全体）
 
@@ -340,6 +398,7 @@ fit1 = sem(model = model1, data = Data)
 
 summary(fit1)
 ```
+
 ```{r}
 fitMeasures(fit1)
 ```
@@ -348,4 +407,276 @@ fitMeasures(fit1)
 modindices(fit1)
 parameterestimates(fit1)
 ```
+
+
+model2(応援ロイヤリティ無し)
+
+```{r}
+model2 = '
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6 + Q17m1
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a1 + a2 + a3
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+'
+
+
+```
+
+
+```{r}
+fit2 = sem(model = model2, data = Data)
+
+summary(fit2)
+```
+
+```{r}
+
+fitMeasures(fit2)
+
+```
+
+```{r}
+modindices(fit2)
+parameterestimates(fit2)
+```
+
+```{r}
+semPaths(fit2, "eq", ask = FALSE, as.expression = "edges")
+```
+
+model3(ファン行動3因子)
+
+```{r}
+model3 = '
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚品質
+a2 =~ Q16m4 + Q16m5 + Q16m6 + Q17m1
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2 + Q14m3 + Q14m4 + Q14m5 + Q14m6 + Q14m10 + Q15m1
+f2 =~ Q15m4 + Q15m5 + Q15m6 + Q15m8
+f3 =~ Q14m8 + Q14m9
+
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a1 + a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2 + r1
+f2 ~ r2 + r1
+f3 ~ r2 + r1
+
+
+
+f1 ~~ 0*f2
+f1 ~~ 0*f3
+f2 ~~ 0*f3
+
+
+'
+
+```
+
+#残差分散
+
+Q16m1 ~~ 1*Q16m1
+Q16m2 ~~ 1*Q16m2
+Q16m3 ~~ 1*Q16m3
+
+Q16m4 ~~ 1*Q16m4
+Q16m5 ~~ 1*Q16m5
+Q16m6 ~~ 1*Q16m6
+Q17m1 ~~ 1*Q17m1
+
+Q17m2 ~~ 1*Q17m2
+Q17m3 ~~ 1*Q17m3
+
+Q17m4 ~~ 1*Q17m4
+Q17m5 ~~ 1*Q17m5
+Q17m6 ~~ 1*Q17m6
+
+Q13m4  ~~ 1*Q13m4
+Q13m5 ~~ 1*Q13m5
+
+Q12m4 ~~ 1*Q12m4
+Q12m5 ~~ 1*Q12m5
+Q12m6 ~~ 1*Q12m6
+
+Q12m7 ~~ 1*Q12m7
+Q12m8 ~~ 1*Q12m8
+Q12m9 ~~ 1*Q12m9
+
+Q12m10 ~~ 1*Q12m10
+Q13m1 ~~ 1*Q13m1
+Q13m2 ~~ 1*Q13m2
+
+Q14m1 ~~ 1*Q14m1
+Q14m2 ~~ 1*Q14m2
+Q14m3 ~~ 1*Q14m3
+Q14m4 ~~ 1*Q14m4
+Q14m5 ~~ 1*Q14m5
+Q14m6 ~~ 1*Q14m6
+Q14m10 ~~ 1*Q14m10
+Q15m1 ~~ 1*Q15m1
+
+Q15m4 ~~ 1*Q15m4
+Q15m5 ~~ 1*Q15m5
+Q15m6 ~~ 1*Q15m6
+Q15m8 ~~ 1*Q15m8
+
+Q14m8 ~~ 1*Q14m8
+Q14m9 ~~ 1*Q14m9
+
+a2 ~~ 1*a2
+a3 ~~ 1*a3
+a4 ~~ 1*a4
+
+r1 ~~ 1*r1
+r2 ~~ 1*r1
+
+f1 ~~ 1*f1
+f2 ~~ 1*f2
+f3 ~~ 1*f3
+
+
+
+
+```{r}
+fit3 = sem(model = model3, data = Data, estimator = "ML", std.lv = TRUE)
+
+summary(fit3)
+```
+
+```{r}
+
+fitMeasures(fit3)
+
+```
+
+```{r}
+modindices(fit3) %>% filter(op == "~")
+parameterestimates(fit3)%>% filter(op != "~")
+```
+model4(修正)
+```{r}
+model4 = '
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚品質
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2 + Q14m3 + Q14m4 + Q14m5 + Q14m6 + Q14m10 + Q15m1
+f2 =~ Q15m4 + Q15m5 + Q15m6 + Q15m8
+f3 =~ Q14m8 + Q14m9
+
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a1 + a2 + a3
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2 
+f3 ~ r2 
+
+
+
+f1 ~~ 0*f2
+f1 ~~ 0*f3
+f2 ~~ 0*f3
+
+
+'
+
+```
+
+```{r}
+fit4 = sem(model = model4, data = Data, estimator = "ML", std.lv = TRUE)
+
+summary(fit4)
+```
+
+```{r}
+fitMeasures(fit4)
+```
+
+
+
+
+
 
