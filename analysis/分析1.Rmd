@@ -264,12 +264,88 @@ alpha11$total
 alpha12 = select(Data,"Q.15-m3","Q.15-m4","Q.15-m5","Q.15-m6") %>% alpha()
 alpha12$total
 
-alpha12 = select(Data,"Q.15-m3","Q.15-m4","Q.15-m5","Q.15-m6") %>% alpha()
-alpha12$total
-
 alpha13 = select(Data,"Q.15-m9","Q.15-m10") %>% alpha()
 alpha13$total
 
 
+```
+
+構造方程式モデリング（全体）
+
+
+列名の変更
+```{r}
+colnames(Data) = str_replace(colnames(Data_t), '-', '')
+colnames(Data) = str_replace(colnames(Data_t), '\\.', '')
+
+```
+
+
+
+モデル
+```{r}
+model1 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6 + Q17m1
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a1 + a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+
+'
+
+```
+
+
+
+```{r}
+fit1 = sem(model = model1, data = Data)
+
+summary(fit1)
+```
+```{r}
+fitMeasures(fit1)
+```
+
+```{r}
+modindices(fit1)
+parameterestimates(fit1)
 ```
 
