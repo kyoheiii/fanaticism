@@ -260,6 +260,23 @@ write.csv(fa.result37$loadings, "fa307.csv")
 
 ```
 
+ファン行動（2因子）
+
+```{r}
+fa.result41 = fa(select(Data,(99:118)),nfactors=2,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result41$loadings, "fa401.csv")
+
+```
+
+```{r}
+
+fa.result42 = fa(select(Data,(99:118),-"Q.14-m6"),nfactors=2,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result42$loadings, "fa402.csv")
+
+```
+
+
+
 クロンバックα
 
 ```{r}
@@ -327,6 +344,16 @@ alpha16$total
 
 ```
 
+```{r}
+#ファン行動（2因子）
+alpha17 = select(Data,"Q.15-m7","Q.15-m8","Q.15-m5","Q.15-m6","Q.14-m8","Q.14-m9","Q.15-m4","Q.15-m9","Q.15-m2","Q.14-m3","Q.15-m10") %>% alpha()
+alpha17$total
+
+alpha18 = select(Data,"Q.14-m7","Q.15-m3","Q.14-m10","Q.15-m1","Q.14-m4","Q.14-m2","Q.14-m5","Q.14-m1") %>% alpha()
+alpha18$total
+
+
+```
 
 構造方程式モデリング（全体）
 
@@ -347,14 +374,12 @@ model1 = '
 #顧客期待
 a1 =~ Q16m1 + Q16m2 + Q16m3 
 #知覚価値
-a2 =~ Q16m4 + Q16m5 + Q16m6 + Q17m1
+a2 =~ Q16m4 + Q16m5 + Q16m6
 #知覚価値
 a3 =~ Q17m2 + Q17m3
 #顧客満足
 a4 =~ Q17m4 + Q17m5 + Q17m6
 
-#応援ロイヤリティ
-r1 =~ Q13m4 + Q13m5
 
 #ロイヤリティ
 r2 =~ r21 + r22 + r23
@@ -376,22 +401,34 @@ f5 =~ Q15m9 + Q15m10
 #回帰
 a3 ~ a1
 a2 ~ a3 + a1
-a4 ~ a1 + a2 + a3
+a4 ~ a2 + a3
 
-r1 ~ a4
+
 r2 ~ a4
 
-f1 ~ r1 + r2
-f2 ~ r1 + r2
-f3 ~ r1 + r2
-f4 ~ r1 + r2
-f5 ~ r1 + r2
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+Q15m3 ~~ Q15m4
+Q15m3 ~~ Q15m5
+Q15m4	~~ Q15m6
+Q15m5 ~~ Q15m6
+Q17m4 ~~ Q17m6
+Q16m2	~~ Q16m3
+Q14m8	~~ Q15m8
+
 
 '
 
 ```
-
-
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+r1 ~ a4
+r1 ~ r2
 
 ```{r}
 fit1 = sem(model = model1, data = Data)
@@ -404,7 +441,7 @@ fitMeasures(fit1)
 ```
 
 ```{r}
-modindices(fit1)
+arrange(modindices(fit1),-mi) %>% filter(op == "~~")
 parameterestimates(fit1)
 ```
 
@@ -646,7 +683,8 @@ f3 =~ Q14m8 + Q14m9
 #回帰
 a3 ~ a1
 a2 ~ a3 + a1
-a4 ~ a1 + a2 + a3
+a4 ~ a2 + a3
+
 
 r2 ~ a4
 
@@ -656,17 +694,12 @@ f3 ~ r2
 
 
 
-f1 ~~ 0*f2
-f1 ~~ 0*f3
-f2 ~~ 0*f3
-
-
 '
 
 ```
 
 ```{r}
-fit4 = sem(model = model4, data = Data, estimator = "ML", std.lv = TRUE)
+fit4 = sem(model = model4, data = Data, estimator = "ML")
 
 summary(fit4)
 ```
@@ -675,8 +708,384 @@ summary(fit4)
 fitMeasures(fit4)
 ```
 
+```{r}
+arrange(modindices(fit4),-mi) %>% filter(op == "~~")
+parameterestimates(fit4)
+```
+```{r}
+parTable(fit4)
+```
+
+model5ロイヤリティ簡易尺度
+
+```{r}
+model5 = '
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚品質
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ Q12m5 + Q12m8 + Q13m1
+
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2 + Q14m3 + Q14m4 + Q14m5 + Q14m6 + Q14m10 + Q15m1
+f2 =~ Q15m4 + Q15m5 + Q15m6 + Q15m8
+f3 =~ Q14m8 + Q14m9
+
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2 
+f3 ~ r2 
+
+
+'
+```
+
+```{r}
+fit5 = sem(model = model5, data = Data, estimator = "ML")
+
+```
+
+```{r}
+
+summary(fit5)
+
+```
+
+```{r}
+
+fitMeasures(fit5)
+
+```
+
+model6ファン行動21因子
+
+```{r}
+model6 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q15m7 + Q15m8 + Q15m5 + Q15m6 + Q14m8 + Q14m9 + Q15m4 + Q15m9 + Q15m2 + Q14m3 + Q15m10
+f2 =~ Q14m7 + Q15m3 + Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m5 + Q14m1
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2
+
+Q16m2	~~ Q16m3
+Q15m5 ~~ Q15m6
+Q14m2	~~ Q14m1
+Q15m9	~~ Q15m10
+Q14m8	~~ Q14m9
+Q14m4	~~ Q14m5
+Q14m3	~~ Q14m2
+Q15m4	~~ Q15m3
+Q17m4	~~ Q17m6
+Q15m3	~~ Q14m4
+Q15m7	~~ Q15m4
+Q14m7	~~ Q14m1
+Q14m7	~~ Q14m10
+Q15m7	~~ Q15m8
+
+f1 ~ a4
+f2 ~ a4
+
+'
+
+```
+
+```{r}
+fit6 = sem(model = model6, data = Data, estimator = "ML")
+
+```
+
+```{r}
+
+a = summary(fit6)
+
+```
+
+
+```{r}
+
+fitMeasures(fit6)
+
+```
+
+
+```{r}
+arrange(modindices(fit6),-mi) %>% filter(op == "~")
+
+```
 
 
 
+```{r}
+#ファン行動（2因子）
+alpha17 = select(Data,"Q.15-m7","Q.15-m8","Q.15-m5","Q.15-m6","Q.14-m8","Q.14-m9","Q.15-m4","Q.15-m9","Q.15-m2","Q.14-m3","Q.15-m10") %>% alpha()
+alpha17$total
 
+alpha18 = select(Data,"Q.14-m7","Q.15-m3","Q.14-m10","Q.15-m1","Q.14-m4","Q.14-m2","Q.14-m5","Q.14-m1") %>% alpha()
+alpha18$total
+
+
+```
+
+
+顧客満足model
+
+```{r}
+model7 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+
+r2 ~ a4
+
+Q16m2	~~ Q16m3
+Q17m4	~~ Q17m6
+Q12m10 ~~ Q13m2
+
+
+'
+
+```
+
+```{r}
+fit7 = sem(model = model7, data = Data, estimator = "ML")
+
+```
+
+```{r}
+summary(fit7)
+```
+
+
+```{r}
+
+fitMeasures(fit7)
+
+```
+
+
+```{r}
+arrange(modindices(fit7),-mi) %>% filter(op == "~~")
+
+```
+
+簡略model1
+
+```{r}
+model8 = '
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q15m7 + Q15m8 + Q15m5 + Q15m6 + Q14m8 + Q14m9 + Q15m4 + Q15m9 + Q15m2 + Q14m3 + Q15m10
+f2 =~ Q14m7 + Q15m3 + Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m5 + Q14m1
+
+#回帰
+
+f1 ~ r2
+f2 ~ r2
+'
+
+
+```
+
+```{r}
+fit8 = sem(model = model8, data = Data, estimator = "ML")
+
+```
+
+```{r}
+
+fitMeasures(fit8)
+
+```
+
+簡略model2
+
+```{r}
+model9 = '
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2 + Q14m3 + Q14m4 + Q14m5 + Q14m6 + Q14m10 + Q15m1
+f2 =~ Q15m4 + Q15m5 + Q15m6 + Q15m8
+f3 =~ Q14m8 + Q14m9
+
+#回帰
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+'
+
+
+```
+
+```{r}
+fit9 = sem(model = model9, data = Data, estimator = "ML")
+
+```
+
+```{r}
+
+fitMeasures(fit9)
+
+```
+
+簡略model3
+
+```{r}
+model10 = '
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+Q15m5	~~ Q15m6
+Q15m3	~~ Q15m4
+Q15m3	~~ Q15m5
+Q14m1	~~ Q14m2
+Q15m4	~~ Q15m6
+Q12m10 ~~ Q13m1
+Q12m4	~~ Q12m6
+Q12m7	~~ Q12m8
+
+
+
+r22	~~	r23
+
+f1 ~~ 0*f5
+f2 ~~ 0*f5
+
+
+'
+
+
+```
+
+```{r}
+fit10 = sem(model = model10, data = Data, estimator = "ML")
+
+```
+
+```{r}
+summary(fit10)
+```
+
+
+```{r}
+
+fitMeasures(fit10)
+
+```
+```{r}
+lavInspect(fit10, "cov.lv")
+```
+
+```{r}
+arrange(modindices(fit10),-mi) %>% filter(op == "~")
+```
 

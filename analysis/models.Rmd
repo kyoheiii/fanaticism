@@ -1,0 +1,1026 @@
+---
+title: "models"
+author: "Kyohei ITO"
+date: "1/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## データ読み込み
+
+```{r}
+
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semTools)
+library(semPlot)
+
+```
+
+
+```{r}
+Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
+Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
+Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
+Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
+Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
+
+#group列の追加
+
+Data_m = mutate(Data_m, group = 1)
+Data_s = mutate(Data_m, group = 2)
+Data_h = mutate(Data_h, group = 3)
+Data_i = mutate(Data_i, group = 4)
+Data_o = mutate(Data_m, group = 5)
+
+#DataFrameの結合
+
+Data = rbind(Data_m, Data_s, Data_h, Data_i, Data_o)
+
+#ダミー項目の削除
+
+Data = select(Data, -"Q.13-m3")
+
+
+#逆転項目の修正
+
+Data = mutate(Data, `Q.5-m8` = (8-`Q.5-m8`),
+                `Q.8-m6` = (8-`Q.8-m6`),
+                `Q.9-m10` = (8-`Q.9-m10`),
+                `Q.16-m3` = (8-`Q.16-m3`),
+                `Q.17-m1` = (8-`Q.17-m1`))
+
+#不必要な項目の削除
+
+Data = select(Data, -(131:142))
+
+
+colnames(Data) = str_replace(colnames(Data), '-', '')
+colnames(Data) = str_replace(colnames(Data), '\\.', '')
+
+
+
+
+```
+
+## cfa
+
+### ロイヤリティ
+
+```{r}
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa1$loadings, "fa501.csv")
+test = fa1$scores
+
+fa2 = fa(test,nfactors=1,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa2$loadings, "fa502.csv")
+
+```
+
+
+```{r}
+m1 = '
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+'
+
+m2 = '
+r2 =~ ML1 + ML2 + ML3
+'
+
+```
+
+```{r}
+f1 = sem(model = m1, data = Data)
+
+summary(f1)
+```
+
+```{r}
+fitMeasures(f1)
+```
+
+```{r}
+f2 = sem(model = m2, data = test)
+
+summary(f2)
+```
+
+```{r}
+fitMeasures(f2)
+```
+
+データの結合
+
+```{r}
+Data = cbind(Data,as.data.frame(test))
+```
+
+
+
+### 顧客満足度
+
+```{r}
+
+fa3 = fa(select(Data,119:130),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa3$loadings, "fa601.csv")
+
+```
+
+```{r}
+m6 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+'
+
+```
+
+```{r}
+f6 = sem(model = m6, data = Data, std.lv = TRUE)
+
+summary(f6)
+```
+
+
+### 全体モデル
+
+```{r}
+m3 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+
+
+'
+
+```
+
+r1 ~ r2
+Q15m3 ~~ Q15m4
+Q15m3 ~~ Q15m5
+Q15m4	~~ Q15m6
+Q15m5 ~~ Q15m6
+Q17m4 ~~ Q17m6
+Q16m2	~~ Q16m3
+Q14m8	~~ Q15m8
+
+```{r}
+
+f3 = sem(model = m3, data = Data, estimator = "WLSMV", std.lv = TRUE)
+
+summary(f3)
+
+```
+```{r}
+fitMeasures(f3,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+m4 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r1 + r2
+
+
+'
+
+```
+
+
+```{r}
+
+f4 = sem(model = m4, data = Data,std.lv = TRUE)
+
+summary(f4)
+
+```
+
+
+```{r}
+fitMeasures(f4,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(f4),-mi) %>% filter(op == "~~")
+parameterestimates(f4)
+```
+
+
+
+```{r}
+m5 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r1 + r2
+
+r1 ~~ r2
+Q16m2 ~~ Q16m6
+Q16m2 ~~ Q16m3
+Q15m5 ~~ Q15m6
+Q15m3 ~~ Q15m4
+Q15m3 ~~ Q15m5
+Q17m4 ~~ Q17m6
+Q15m4 ~~ Q15m6
+
+
+'
+
+```
+
+
+```{r}
+
+f5 = sem(model = m5, data = Data,std.lv = TRUE)
+
+summary(f5)
+
+```
+
+
+```{r}
+fitMeasures(f5,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(f5),-mi) %>% filter(op == "~")
+parameterestimates(f5)
+```
+
+```{r}
+m7 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r1 + r2
+
+r2 ~ r1
+
+Q15m5 ~~ Q15m6
+Q15m3 ~~ Q15m4
+Q15m3 ~~ Q15m5
+Q15m4 ~~ Q15m6
+Q17m4 ~~ Q17m6
+Q14m1 ~~ Q15m3
+Q14m7 ~~ Q15m4
+Q14m8 ~~ Q15m8
+Q15m7 ~~ Q15m6
+Q15m7 ~~ Q15m8
+
+'
+
+```
+
+```{r}
+
+f7 = sem(model = m7, data = Data,std.lv = TRUE)
+
+summary(f7)
+
+```
+
+```{r}
+fitMeasures(f7,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+m8 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+Q15m5 ~~ Q15m6
+Q15m3 ~~ Q15m4
+Q15m3 ~~ Q15m5
+Q17m4 ~~ Q17m6
+Q14m1 ~~ Q15m3
+Q14m7 ~~ Q15m4
+Q14m8 ~~ Q15m8
+Q15m7 ~~ Q15m6
+Q15m7 ~~ Q15m8
+Q14m1 ~~ Q14m2
+Q15m7	~~ Q15m5
+Q14m10 ~~ Q15m7
+Q14m4	~~ Q15m5
+Q14m1	~~ Q14m3
+Q15m8	~~ Q15m6
+
+
+'
+
+```
+
+```{r}
+
+f8 = sem(model = m8, data = Data,std.lv = TRUE)
+
+summary(f8)
+
+```
+
+```{r}
+fitMeasures(f8,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+
+
+
+```{r}
+arrange(modindices(f8),-mi) %>% filter(op == "~~")
+parameterestimates(f8)
+```
+
+
+
+
+
+
+```{r}
+m9 = '
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+'
+
+m10 = '
+
+f1 =~ Q14m1 + Q15m1 + Q14m4 + Q14m2 + Q14m5 + Q15m3
+
+f2 =~ Q15m6 + Q15m5 + Q15m8 + Q15m4
+
+f3 =~ Q14m8 + Q14m9 + Q14m7
+
+'
+
+m11 = '
+
+f1 =~ Q14m1 + Q14m2 + Q14m3 + Q14m4 + Q14m5 + Q14m6 + Q14m10 + Q15m1
+
+f2 =~ Q15m4 + Q15m5 + Q15m6 + Q15m8
+
+f3 =~ Q14m8 + Q14m9
+
+'
+
+m12 = '
+
+f1 =~ Q15m7 + Q15m8 + Q15m5 + Q15m6 + Q14m8 + Q14m9 + Q15m4 + Q15m9 + Q15m2 + Q14m3 + Q15m10
+f2 =~ Q14m7 + Q15m3 + Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m5 + Q14m1
+
+'
+
+```
+
+```{r}
+
+fitMeasures(cfa(model = m9,data = Data),c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(cfa(model = m10,data = Data),c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(cfa(model = m11,data = Data),c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(cfa(model = m12,data = Data),c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+```{r}
+m7 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ ML1 + ML2 + ML3
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+'
+
+```
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+Q15m5 ~~ Q15m6
+Q15m3 ~~ Q15m5
+Q17m4 ~~ Q17m6
+Q14m1 ~~ Q15m3
+Q14m7 ~~ Q15m4
+Q14m8 ~~ Q15m8
+Q15m7 ~~ Q15m6
+Q12m10 ~~ Q13m1
+Q15m7	~~ Q15m5
+
+```{r}
+
+f7 = sem(model = m7, data = Data,estimator = "WLSMV", std.lv = TRUE)
+
+summary(f7)
+
+```
+
+```{r}
+fitMeasures(f7,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+arrange(modindices(f7),-mi) %>% filter(op == "~~")
+parameterestimates(f7)
+```
+
+
+最終モデル
+
+```{r}
+
+m8 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+Q15m5 ~~ Q15m6
+Q15m3	~~ Q15m5
+Q15m3	~~ Q15m4
+Q17m4	~~ Q17m6
+Q15m4	~~ Q15m6
+Q12m10	~~ Q13m1
+
+
+
+```{r}
+
+f8 = lavaan(model = m8, data = Data,estimator = "ML", std.lv = TRUE)
+
+summary(f8)
+
+```
+
+```{r}
+fitMeasures(f8,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+arrange(modindices(f8),-mi) %>% filter(op == "~~")
+parameterestimates(f8)
+```
+
+
+ファン心理
+```{r}
+fa.result15 = fa(select(Data,(15:87),-`Q5m8`,-`Q9m10`,-`Q10m9`,-`Q10m4`,-`Q8m6`,-`Q11m4`,-`Q11m3`,-`Q11m2`,-`Q8m5`,-`Q8m4`,-`Q11m1`,-`Q8m3`,-`Q8m2`,-`Q10m10`,-`Q9m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+a = fa.result15$scores
+Data = cbind(Data,a)
+```
+
+```{r}
+g = kmeans(select(Data,ML2,ML1,ML8,ML7,ML3,ML4,ML6,ML5),3)
+Data = cbind(Data,g$cluster)
+Data = rename(Data, C = 'g$cluster')
+```
+
+```{r}
+g$centers
+```
+
+```{r}
+a = (Data$ML2 + Data$ML1 + Data$ML8 + Data$ML7 + Data$ML3 + Data$ML4 + Data$ML6 + Data$ML5)/8
+a = as.data.frame(a)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+b = (test$ML1 + test$ML3 + test$ML2)/3
+b = as.data.frame(b)
+
+cor(a,b)
+
+```
+
+```{r}
+wtp = select(Data, C , 'Q31(FA)', 'Q41(FA)', group)
+wtp = rename(wtp, p = 'Q31(FA)',wp = 'Q41(FA)')
+wtp$C = as.factor(wtp$C)
+```
+
+```{r}
+
+wtp %>%
+  group_by(C) %>%
+  summarize(mean_p = mean(p),mean_wtp = mean(wp))
+  
+
+```
+```{r}
+
+summary(aov(p ~ C,data=wtp))
+
+```
+
+```{r}
+
+pairwise.t.test(wtp$p,wtp$C,p.adjust.method="holm",paired = FALSE)
+
+```
+
+```{r}
+
+summary(aov(wp ~ C,data=wtp))
+
+```
+
+```{r}
+
+pairwise.t.test(wtp$wp,wtp$C,p.adjust.method="holm",paired = FALSE)
+
+```
+
+
+```{r}
+f9 = lavaan(model = m8, data = filter(Data,group == "1"),estimator = "ML", std.lv = TRUE)
+
+summary(f9)
+```
+
+```{r}
+f10 = lavaan(model = m8, data = filter(Data,group == "2"),estimator = "ML", std.lv = TRUE)
+
+summary(f10)
+
+```
+
+```{r}
+f11 = lavaan(model = m8, data = filter(Data,group == "3"),estimator = "ML", std.lv = TRUE)
+
+summary(f11)
+```
+
+
+```{r}
+f12 = lavaan(model = m8, data = filter(Data,group == "4"),estimator = "ML", std.lv = TRUE)
+
+summary(f12)
+```
+
+```{r}
+f13 = lavaan(model = m8, data = filter(Data,group == "5"),estimator = "ML", std.lv = TRUE)
+
+summary(f13)
+```
+
+```{r}
+
+m9 = '
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+Q15m5	~~ Q15m6
+Q15m3	~~ Q15m4
+Q15m3	~~ Q15m5
+Q14m1	~~ Q14m2
+Q12m10 ~~ Q13m1
+Q12m4	~~ Q12m6
+Q12m7	~~ Q12m8
+Q14m1	~~ Q15m3
+Q14m8	~~ Q15m8
+Q15m7	~~ Q15m6
+Q15m7	~~ Q15m5
+Q14m4	~~ Q15m8
+Q14m7	~~ Q15m4
+Q14m4	~~ Q14m7
+Q14m2	~~ Q15m3
+Q14m4	~~ Q15m9
+Q14m4	~~ Q15m5
+
+
+
+r22	~~	r23
+
+'
+
+```
+
+```{r}
+f14 = lavaan(model = m9, data = Data,estimator = "ML", std.lv = TRUE)
+
+summary(f14)
+```
+```{r}
+fitMeasures(f14,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(f14),-mi) 
+
+```
+
+```{r}
+out = measurementInvariance(model = m9,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+f15 = lavaan(model = m9, data = filter(Data,group == "1"),estimator = "ML", std.lv = TRUE)
+
+summary(f15)
+```
+
+
