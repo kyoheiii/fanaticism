@@ -1,0 +1,2452 @@
+---
+title: "分析2"
+author: "Kyohei ITO"
+date: "1/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+データの読み込み
+## データ読み込み
+
+```{r}
+
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semTools)
+library(semPlot)
+
+
+```
+
+```{r}
+Data_m$`Q.3-1(FA)`
+```
+
+```{r}
+sd(Data$年齢)
+```
+
+
+```{r}
+set.seed(11111)
+Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
+Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
+Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
+Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
+Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
+
+#group列の追加
+
+Data_m = mutate(Data_m, group = 1)
+Data_s = mutate(Data_s, group = 2)
+Data_h = mutate(Data_h, group = 3)
+Data_i = mutate(Data_i, group = 4)
+Data_o = mutate(Data_o, group = 5)
+
+#DataFrameの結合
+
+Data = rbind(Data_m, Data_s, Data_h, Data_i, Data_o)
+
+#ダミー項目の削除
+
+Data = select(Data, -"Q.13-m3")
+
+
+#逆転項目の修正
+
+Data = mutate(Data, `Q.5-m8` = (8-`Q.5-m8`),
+                `Q.8-m6` = (8-`Q.8-m6`),
+                `Q.9-m10` = (8-`Q.9-m10`),
+                `Q.16-m3` = (8-`Q.16-m3`),
+                `Q.17-m1` = (8-`Q.17-m1`))
+
+#不必要な項目の削除
+
+Data = select(Data, -(131:142))
+
+
+colnames(Data) = str_replace(colnames(Data), '-', '')
+colnames(Data) = str_replace(colnames(Data), '\\.', '')
+
+# ファン心理
+fa.result15 = fa(select(Data,(15:87),-`Q5m8`,-`Q9m10`,-`Q10m9`,-`Q10m4`,-`Q8m6`,-`Q11m4`,-`Q11m3`,-`Q11m2`,-`Q8m5`,-`Q8m4`,-`Q11m1`,-`Q8m3`,-`Q8m2`,-`Q10m10`,-`Q9m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+aa = fa.result15$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f11 = ML2, f12 = ML1, f13 = ML8, f14 = ML7, f15 = ML3, f16 = ML4, f17 = ML6, f18 = ML5)
+
+fa.result26 = fa(select(Data,(99:118),-`Q14m6`,-`Q15m1`,-`Q14m5`,-`Q15m2`,-`Q14m9`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+bb = fa.result26$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f21 = ML5, f22 = ML2, f23 = ML1, f24 = ML4, f25 = ML3)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+Data = cbind(Data,test)
+Data = rename(Data, f31 = ML1, f32 = ML3, f33 = ML2)
+
+fa12 = as.data.frame((Data$f31 + Data$f32 + Data$f33)/3)
+Data = cbind(Data,fa12)
+Data = rename(Data, f41 = 151)
+
+
+g = kmeans(select(Data,f11,f12,f13,f14,f15,f16,f17,f18),6,algorithm = "Hartigan-Wong", iter.max = 1000)
+Data = cbind(Data,g$cluster)
+Data = rename(Data, C = 'g$cluster')
+
+
+```
+
+
+
+kmeans(select(Data,ML2,ML1,ML8,ML7,ML3,ML4,ML6,ML5),4,algorithm = "Hartigan-Wong", iter.max = 1000)
+
+```{r}
+g$centers
+```
+
+
+ファン心理とロイヤリティの相関係数
+```{r}
+a = (Data$f11 + Data$f12 + Data$f13 + Data$f14 + Data$f15 + Data$f16 + Data$f17 + Data$f18)/8
+a = as.data.frame(a)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+b = (test$ML1 + test$ML3 + test$ML2)/3
+b = as.data.frame(b)
+
+#愛着・認知・誇り
+
+ab = cbind(Data$f11, Data$f12, Data$f13, Data$f14, Data$f15, Data$f16, Data$f17, Data$f18, test$ML1, test$ML3, test$ML2)
+
+cor(a, b)
+
+ab = cor(ab)
+write.csv(ab,"ab.csv")
+
+```
+全体
+```{r}
+Data_t = cbind(Data,b)
+cc = Data_t %>% select('Q31(FA)')
+dd = Data_t %>% select('b')
+cor(cc,dd)
+
+
+```
+ミュージシャンファンのロイヤリティと年間利用金額の相関係数
+```{r}
+Data_t = cbind(Data,b)
+c = Data_t %>% filter(group == "1") %>% select('Q31(FA)')
+d = Data_t %>% filter(group == "1") %>% select('b')
+cor(c,d)
+
+
+```
+```{r}
+
+e = Data_t %>% filter(group == "2") %>% select('Q31(FA)')
+f = Data_t %>% filter(group == "2") %>% select('b')
+cor(e,f)
+```
+
+```{r}
+
+g = Data_t %>% filter(group == "3") %>% select('Q31(FA)')
+h = Data_t %>% filter(group == "3") %>% select('b')
+cor(g,h)
+
+```
+```{r}
+i = Data_t %>% filter(group == "4") %>% select('Q31(FA)')
+j = Data_t %>% filter(group == "4") %>% select('b')
+cor(i,j)
+```
+```{r}
+
+k = Data_t %>% filter(group == "5") %>% select('Q31(FA)')
+l = Data_t %>% filter(group == "5") %>% select('b')
+cor(k,l)
+
+```
+
+全体
+```{r}
+Data_t = cbind(Data,b)
+cc = Data_t %>% select('Q41(FA)')
+dd = Data_t %>% select('b')
+cor(cc,dd)
+
+
+```
+ミュージシャンファンのロイヤリティと年間利用金額の相関係数
+```{r}
+Data_t = cbind(Data,b)
+c = Data_t %>% filter(group == "1") %>% select('Q41(FA)')
+d = Data_t %>% filter(group == "1") %>% select('b')
+cor(c,d)
+
+
+```
+```{r}
+
+e = Data_t %>% filter(group == "2") %>% select('Q41(FA)')
+f = Data_t %>% filter(group == "2") %>% select('b')
+cor(e,f)
+```
+
+```{r}
+
+g = Data_t %>% filter(group == "3") %>% select('Q41(FA)')
+h = Data_t %>% filter(group == "3") %>% select('b')
+cor(g,h)
+
+```
+```{r}
+i = Data_t %>% filter(group == "4") %>% select('Q41(FA)')
+j = Data_t %>% filter(group == "4") %>% select('b')
+cor(i,j)
+```
+```{r}
+
+k = Data_t %>% filter(group == "5") %>% select('Q41(FA)')
+l = Data_t %>% filter(group == "5") %>% select('b')
+cor(k,l)
+
+```
+
+
+過去一年の利用金額とwtp
+```{r}
+wtp = select(Data, C , 'Q31(FA)', 'Q41(FA)', group)
+wtp = rename(wtp, p = 'Q31(FA)',wp = 'Q41(FA)')
+wtp$C = as.factor(wtp$C)
+wtp$group = as.factor(wtp$group)
+
+wtp %>%
+  group_by(C) %>%
+  summarize(mean_p = mean(p),mean_wtp = mean(wp))
+```
+
+
+
+```{r}
+
+table(wtp$C,wtp$group)
+
+```
+
+
+
+
+年間利用金額の一元配置
+```{r}
+
+summary(aov(p ~ C,data=wtp))
+
+```
+年間利用金額の多重比較
+```{r}
+
+pairwise.t.test(wtp$p,wtp$C,p.adjust.method="holm",paired = FALSE)
+
+```
+
+wtpの一元配置
+```{r}
+
+summary(aov(wp ~ C,data=wtp))
+
+```
+wtpの多重比較
+```{r}
+
+pairwise.t.test(wtp$wp,wtp$C,p.adjust.method="holm",paired = FALSE)
+
+```
+
+ファン対象別の年間利用金額とwtp
+```{r}
+wtp %>%
+  group_by(group) %>%
+  summarize(mean_p = mean(p),mean_wtp = mean(wp))
+```
+
+```{r}
+ggplot(wtp)+geom_boxplot(aes(x = p,y= group))
+```
+
+
+年間利用金額の一元配置
+```{r}
+
+summary(aov(p ~ group,data=wtp))
+
+```
+年間利用金額の多重比較
+```{r}
+
+pairwise.t.test(wtp$p,wtp$group,p.adjust.method="bonferroni",paired = FALSE)
+
+```
+
+wtpの一元配置
+```{r}
+
+summary(aov(wp ~ group, data=wtp))
+
+```
+wtpの多重比較
+```{r}
+
+pairwise.t.test(wtp$wp,wtp$group,p.adjust.method="holm",paired = FALSE)
+
+```
+
+
+```{r}
+
+m9 = '
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+Q15m5	~~ Q15m6
+Q15m3	~~ Q15m4
+Q15m3	~~ Q15m5
+Q14m1	~~ Q14m2
+Q12m10 ~~ Q13m1
+Q12m4	~~ Q12m6
+Q12m7	~~ Q12m8
+Q14m1	~~ Q15m3
+Q14m8	~~ Q15m8
+Q15m7	~~ Q15m6
+Q15m7	~~ Q15m5
+Q14m4	~~ Q15m8
+Q14m7	~~ Q15m4
+Q14m4	~~ Q14m7
+Q14m2	~~ Q15m3
+Q14m4	~~ Q15m9
+Q14m4	~~ Q15m5
+
+r22	~~	r23
+
+```{r}
+out = measurementInvariance(model = m9,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+f15 = lavaan(model = m9, data = filter(Data,group == "1"),estimator = "ML", std.lv = TRUE)
+
+summary(f15)
+```
+
+
+
+```{r}
+f15 = lavaan(model = m9, data = Data,group = "group", group.equal = c("loadings", "intercepts"), estimator = "ML", std.lv = TRUE)
+
+summary(f15)
+```
+
+```{r}
+
+m8 = '
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+
+
+
+
+
+```{r}
+f15 = lavaan(model = m8, data = Data, estimator = "ML", std.lv = TRUE)
+
+#summary(f15, standardized=TRUE)
+
+lavInspect(f15, "cor.lv")
+```
+```{r}
+fitMeasures(f15,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = m8,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+f15 = lavaan(model = m8, data = Data, estimator = "ML", group = "group",group.equal = "loadings")
+
+#summary(f15)
+
+lavInspect(f15, "cor.lv")
+```
+
+
+ミュージシャン
+```{r}
+
+m10 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+
+```{r}
+aaa = filter(Data,group == "1")
+f16 = lavaan(model = m10, data = aaa, estimator = "ML", std.lv = TRUE)
+
+summary(f16)
+```
+
+```{r}
+fitMeasures(f16,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(f16),-mi)
+
+```
+スポーツ選手
+```{r}
+
+m11 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 
+f3 ~ r1 + r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+
+```{r}
+bbb = filter(Data,group == "2")
+f17 = lavaan(model = m11, data = bbb, estimator = "ML", std.lv = TRUE)
+
+summary(f17)
+```
+
+```{r}
+fitMeasures(f17,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+アイドル
+
+```{r}
+
+m12 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r1 
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+```{r}
+ccc = filter(Data,group == "4")
+f18 = lavaan(model = m12, data = ccc, estimator = "ML", std.lv = TRUE)
+
+summary(f18)
+```
+
+```{r}
+fitMeasures(f18,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+
+お笑いタレント
+```{r}
+
+m13 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a3
+
+r1 ~ a4
+
+f1 ~ r2
+f2 ~ r1 
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+r2 ~ r1
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+```{r}
+ddd = filter(Data,group == "5")
+f19 = lavaan(model = m13, data = ddd, estimator = "ML", std.lv = TRUE)
+
+summary(f19)
+```
+
+```{r}
+fitMeasures(f19,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+lavInspect(f19, "cov.lv")
+```
+
+
+ミュージシャン
+```{r}
+
+m20 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2 
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+
+```{r}
+aaa = filter(Data,group == "1")
+f20 = lavaan(model = m20, data = aaa, estimator = "ML", std.lv = TRUE)
+
+summary(f20)
+```
+
+```{r}
+fitMeasures(f20,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+
+m21 = '
+
+
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚品質
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+a2 ~ a3 
+a4 ~ a2 + a3
+
+r2 ~ a4
+
+f1 ~ r2
+f2 ~ r2 
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+Q16m4 ~~ Q16m4
+Q16m5 ~~ Q16m5
+Q16m6 ~~ Q16m6
+Q17m2 ~~ Q17m2
+Q17m3 ~~ Q17m3
+Q17m4 ~~ Q17m4
+Q17m5 ~~ Q17m5
+Q17m6 ~~ Q17m6
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+
+f2 ~~ f3
+f2 ~~ f4
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+
+
+'
+
+```
+
+
+```{r}
+aaa = filter(Data,group == "2")
+f21 = lavaan(model = m21, data = aaa, estimator = "ML", std.lv = TRUE)
+
+summary(f21)
+```
+
+```{r}
+lavInspect(f21, "cov.lv")
+```
+
+
+```{r}
+fitMeasures(f16,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+
+```{r}
+
+m111 = '
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+
+
+
+
+# 分散
+Q12m4 ~~ Q12m4
+Q12m5 ~~ Q12m5
+Q12m6 ~~ Q12m6
+
+Q12m7 ~~ Q12m7
+Q12m8 ~~ Q12m8
+Q12m9 ~~ Q12m9
+
+Q12m10 ~~ Q12m10
+Q13m1 ~~ Q13m1
+Q13m2 ~~ Q13m2
+
+Q14m4 ~~ Q14m4
+Q14m7 ~~ Q14m7
+Q14m10 ~~ Q14m10
+
+Q14m1 ~~ Q14m1
+Q14m2 ~~ Q14m2
+Q14m3 ~~ Q14m3
+
+Q14m8 ~~ Q14m8
+Q15m7 ~~ Q15m7
+Q15m8 ~~ Q15m8
+
+Q15m3 ~~ Q15m3
+Q15m4 ~~ Q15m4
+Q15m5 ~~ Q15m5
+Q15m6 ~~ Q15m6
+
+Q15m9 ~~ Q15m9
+Q15m10 ~~ Q15m10
+
+Q13m4 ~~ Q13m4
+Q13m5 ~~ Q13m5
+
+# 共分散
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+f1 ~~ f5
+
+f2 ~~ f3
+f2 ~~ f4
+f2 ~~ f5
+
+
+f3 ~~ f4
+f3 ~~ f5
+
+f4 ~~ f5
+
+r1 ~~ r2
+
+'
+
+```
+
+
+```{r}
+mo1 = '
+
+
+
+#ロイヤリティ
+
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+
+#回帰
+
+
+f1 ~ r2
+f2 ~ r2
+f3 ~ r2
+f4 ~ r2
+f5 ~ r2
+
+
+
+'
+```
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 ~~ 0*f2
+f1 ~~ 0*f3
+f1 ~~ 0*f4
+f1 ~~ 0*f5
+
+f2 ~~ 0*f3
+f2 ~~ 0*f4
+f2 ~~ 0*f5
+
+
+f3 ~~ 0*f4
+f3 ~~ 0*f5
+
+f4 ~~ 0*f5
+
+
+
+```{r}
+a = summary(sem(model = mo1,data = Data))
+```
+
+
+```{r}
+out = measurementInvariance(model = mo1,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+a = sem(model = mo1,data = Data, group = "group", group.equal = "loadings")
+lavInspect(a, "cor.lv")
+
+```
+
+```{r}
+Data %>% select(f21,f22,f23,f24,f25,f31,f32,f33) %>% cor()
+```
+
+```{r}
+mo2 = '
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+
+r1 ~ b
+r2 ~ b
+
+r1 ~~ r2
+
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+'
+```
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6 + Q17m1
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+```{r}
+a = sem(model = mo2,data = Data)
+summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+out = measurementInvariance(model = mo2,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+
+```{r}
+a = sem(model = mo2,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(a)
+#lavInspect(a, "cor.lv")
+
+
+```
+
+```{r}
+
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+```{r}
+Dataa = Data %>% filter(group != "2")
+out = measurementInvariance(model = mo2,data = Dataa,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+a = sem(model = mo2,data = Dataa, group = "group", group.equal = c("loadings", "intercepts"))
+summary(a)
+
+```
+
+
+```{r}
+mo3 = '
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+
+#愛着
+r2 =~ Q12m7 + Q12m8 + Q12m9
+
+
+
+
+#ファン行動
+f1 =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2 + Q14m6 + Q15m10
+
+f2 =~ Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+
+
+
+Q17m5	~~ Q16m4
+
+r1 ~ b
+r2 ~ b
+
+r1 ~~ r2
+
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+
+
+
+'
+```
+
+
+```{r}
+a = sem(model = mo3,data = Data) 
+summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = mo3,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+, "intercepts"
+
+```{r}
+a = sem(model = mo3,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+```{r}
+mo4 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+f4 ~ r21 + r22 + r23
+f5 ~ r21 + r22 + r23
+
+
+'
+```
+
+
+```{r}
+a = sem(model = mo4,data = Data)
+#summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = mo4,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+```{r}
+b = sem(model = mo4,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+```{r}
+mo5 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+
+r21 + r22 + r23 ~ b
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+f4 ~ r21 + r22 + r23
+f5 ~ r21 + r22 + r23
+
+
+
+'
+```
+
+
+```{r}
+d = sem(model = mo5,data = Data)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = mo5,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = mo4,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+```{r}
+lavInspect(b, "cor.lv")
+```
+
+```{r}
+mo5 = '
+
+
+
+r21 =~ f31 + f32 + f33
+
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+
+r21 ~ b
+
+
+f1 ~ r21
+f2 ~ r21
+f3 ~ r21
+f4 ~ r21
+f5 ~ r21
+
+
+
+'
+```
+
+
+```{r}
+d = sem(model = mo5,data = Data)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = mo5,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = mo4,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+```{r}
+mo6 = '
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2 + Q14m6 + Q15m10
+
+f2 =~ Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+
+r1 ~ b
+r21 ~ b
+r22 ~ b
+r23 ~ b
+
+
+
+
+f1 ~ r1 + r21 + r22 + r23
+f2 ~ r1 + r21 + r22 + r23
+
+
+
+'
+```
+
+```{r}
+d = sem(model = mo6,data = Data)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+out = measurementInvariance(model = mo6,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = mo6,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+```{r}
+mo7 = '
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+f1 =~ Q15m2 + Q15m4 + Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+f2 =~ Q14m7 + Q14m10 + Q15m1
+
+f3 =~ Q14m1 + Q14m5 + Q14m2
+
+
+r1 ~ b
+r21 ~ b
+r22 ~ b
+r23 ~ b
+
+
+
+
+f1 ~ r1 + r21 + r22 + r23
+f2 ~ r1 + r21 + r22 + r23
+f3 ~ r1 + r21 + r22 + r23
+
+
+'
+```
+
+
+```{r}
+d = sem(model = mo7,data = Data)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+Data_a = Data %>% filter(group != 2)
+
+
+
+```
+
+```{r}
+a = sem(model = mo2,data = Data_a)
+summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+out = measurementInvariance(model = mo7,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+m5 = '
+
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+#ロイヤリティ
+r2 =~ r21 + r22 + r23
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+#ファン行動
+f1 =~ Q14m4 + Q14m7 + Q14m10
+f2 =~ Q14m1 + Q14m2 + Q14m3
+f3 =~ Q14m8 + Q15m7 + Q15m8
+f4 =~ Q15m3 + Q15m4 + Q15m5 + Q15m6
+f5 =~ Q15m9 + Q15m10
+
+#回帰
+a3 ~ a1
+a2 ~ a3 + a1
+a4 ~ a2 + a3
+
+r1 ~ a4
+r2 ~ a4
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+f4 ~ r1 + r2
+f5 ~ r1 + r2
+
+r1 ~~ r2
+'
+```
+
+```{r}
+a = sem(model = m5,data = Data, estimator = "ML")
+summary(a)
+fitMeasures(a,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+out = measurementInvariance(model = m5,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = m5,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+Data.new <- as.data.frame(scale(select(Data,-(1:14))))
+```
+
+```{r}
+d = sem(model = mo6,data = Data.new)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+
+```{r}
+out = measurementInvariance(model = mo6,data = Data.new,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+mo5 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+f1 =~ Q14m1 + Q14m2 + Q14m3
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m7 + Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+
+r21 + r22 + r23 ~ b
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+f4 ~ r21 + r22 + r23
+f5 ~ r21 + r22 + r23
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+'
+```
+f1 ~~ c(NA, NA, NA, NA, NA)*f1 + c(g1, g2, g3, g4, g5)*f1
+f2 ~~ c(NA, NA, NA, NA, NA)*f2 + c(h1, h2, h3, h4, h5)*f2
+f3 ~~ c(NA, NA, NA, NA, NA)*f3 + c(i1, i2, i3, i4, i5)*f3
+f4 ~~ c(NA, NA, NA, NA, NA)*f4 + c(j1, j2, j3, j4, j5)*f4
+f5 ~~ c(NA, NA, NA, NA, NA)*f5 + c(k1, k2, k3, k4, k5)*f5
+r21 ~~ c(NA, NA, NA, NA, NA)*r21 + c(g1, g2, g3, g4, g5)*r21
+r22 ~~ c(NA, NA, NA, NA, NA)*r22 + c(h1, h2, h3, h4, h5)*r22
+r23 ~~ c(NA, NA, NA, NA, NA)*r23 + c(i1, i2, i3, i4, i5)*r23
+
+g1 > 0 
+g2 > 0 
+g3 > 0 
+g4 > 0 
+g5 > 0
+h1 > 0 
+h2 > 0 
+h3 > 0 
+h4 > 0 
+h5 > 0
+i1 > 0 
+i2 > 0 
+i3 > 0 
+i4 > 0 
+i5 > 0
+
+
+g1 > 0 
+g2 > 0 
+g3 > 0 
+g4 > 0 
+g5 > 0
+h1 > 0 
+h2 > 0 
+h3 > 0 
+h4 > 0 
+h5 > 0
+i1 > 0 
+i2 > 0 
+i3 > 0 
+i4 > 0 
+i5 > 0
+j1 > 0 
+j2 > 0 
+j3 > 0 
+j4 > 0 
+j5 > 0
+k1 > 0 
+k2 > 0 
+k3 > 0 
+k4 > 0 
+k5 > 0
+
+ + Q12m9
+
+```{r}
+d = sem(model = mo5,data = Data,std.ov = TRUE)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(d),-mi) %>% filter(op == "~")
+parameterestimates(d)
+```
+
+
+```{r}
+lavInspect(d, "cov.lv")
+lavInspect(d, "cor.lv")
+```
+
+
+```{r}
+out = measurementInvariance(model = mo5,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+mo8 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 =~ Q15m2 + Q15m4 + Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+f2 =~ Q14m7 + Q14m10 + Q15m1
+
+f3 =~ Q14m1 + Q14m5 + Q14m2
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+f1 ~~ f2
+f1 ~~ f3
+f2 ~~ f3
+
+'
+```
+
+f4 ~ r21 + r22 + r23
+f5 ~ r21 + r22 + r23
+
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+```{r}
+d = sem(model = mo8,data = Data,std.ov = TRUE)
+summary(d)
+fitMeasures(d,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(d),-mi) %>% filter(op == "~")
+parameterestimates(d)
+```
+
+```{r}
+out = measurementInvariance(model = mo8,data = Data.new,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = mo8,data = Data.new, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+```{r}
+mo9 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 =~ Q14m1 + Q14m2 + Q14m5
+f2 =~ Q14m7 + Q14m10
+f3 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f4 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+f4 ~ r21 + r22 + r23
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+f2 ~~ f3
+f2 ~~ f4
+f3 ~~ f4
+
+'
+```
+
+
+```{r}
+e = sem(model = mo9,data = Data,std.ov = TRUE)
+summary(e)
+fitMeasures(e,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(d),-mi) %>% filter(op == "~")
+parameterestimates(d)
+```
+
+```{r}
+out = measurementInvariance(model = mo9,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+b = sem(model = mo9,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(b)
+fitMeasures(b,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+mo10 = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 =~ Q14m1 + Q14m2
+f2 =~ Q14m4 + Q14m5
+f3 =~ Q14m7 + Q14m8 + Q14m9
+f4 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+f5 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+f4 ~ r21 + r22 + r23
+f5 ~ r21 + r22 + r23
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+f1 ~~ f2
+f1 ~~ f3
+f1 ~~ f4
+f1 ~~ f5
+f2 ~~ f3
+f2 ~~ f4
+f2 ~~ f5
+f3 ~~ f4
+f3 ~~ f5
+f4 ~~ f5
+
+
+
+'
+```
+
+
+```{r}
+e = sem(model = mo10,data = Data,std.ov = TRUE)
+summary(e)
+fitMeasures(e,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(d),-mi) %>% filter(op == "~")
+parameterestimates(d)
+```
+
+```{r}
+out = measurementInvariance(model = mo10,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+modelaaaa = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 =~ Q14m1 + Q14m2 + Q14m4 + Q14m5
+
+
+f2 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+
+
+f3 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m9
+
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+f1 ~~ f2
+f1 ~~ f3
+f2 ~~ f3
+
+Q14m4	~~ Q14m5
+Q14m4	~~ Q15m1
+Q15m4	~~ Q15m5
+Q15m5	~~ Q15m6
+
+r21 ~ 1
+r22 ~ 1
+r23 ~ 1
+
+f1 ~ 1
+f2 ~ 1
+f3 ~ 1
+
+'
+```
+
+```{r}
+e = sem(model = modelaaaa,data = Data,std.ov = TRUE)
+summary(e, standardized=T)
+fitMeasures(e,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+arrange(modindices(d),-mi) %>% filter(op == "~")
+parameterestimates(d)
+```
+
+```{r}
+out = measurementInvariance(model = modelaaaa,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+```{r}
+fff = sem(model = modelaaaa,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(fff, standardized=T)
+fitMeasures(fff,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+arrange(modindices(fff),-mi) %>% filter(op != "")
+parameterestimates(fff)
+```
+
