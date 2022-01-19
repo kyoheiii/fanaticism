@@ -1,0 +1,563 @@
+---
+title: "分析＿最終"
+author: "Kyohei ITO"
+date: "1/16/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 準備
+
+必要パッケージの読み込み
+
+```{r}
+
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semTools)
+library(semPlot)
+
+
+```
+
+データの読み込みと整形
+
+```{r}
+set.seed(11111)
+Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
+Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
+Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
+Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
+Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
+
+#group列の追加
+
+Data_m = mutate(Data_m, group = 1)
+Data_s = mutate(Data_s, group = 2)
+Data_h = mutate(Data_h, group = 3)
+Data_i = mutate(Data_i, group = 4)
+Data_o = mutate(Data_o, group = 5)
+
+#DataFrameの結合
+
+Data = rbind(Data_m, Data_s, Data_h, Data_i, Data_o)
+
+#ダミー項目の削除
+
+Data = select(Data, -"Q.13-m3")
+
+
+#逆転項目の修正
+
+Data = mutate(Data, `Q.5-m8` = (8-`Q.5-m8`),
+                `Q.8-m6` = (8-`Q.8-m6`),
+                `Q.9-m10` = (8-`Q.9-m10`),
+                `Q.16-m3` = (8-`Q.16-m3`),
+                `Q.17-m1` = (8-`Q.17-m1`))
+
+#不必要な項目の削除
+
+Data = select(Data, -(131:142))
+
+
+colnames(Data) = str_replace(colnames(Data), '-', '')
+colnames(Data) = str_replace(colnames(Data), '\\.', '')
+
+# ファン心理
+fa.result15 = fa(select(Data,(15:87),-`Q5m8`,-`Q9m10`,-`Q10m9`,-`Q10m4`,-`Q8m6`,-`Q11m4`,-`Q11m3`,-`Q11m2`,-`Q8m5`,-`Q8m4`,-`Q11m1`,-`Q8m3`,-`Q8m2`,-`Q10m10`,-`Q9m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+aa = fa.result15$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f11 = ML2, f12 = ML1, f13 = ML8, f14 = ML7, f15 = ML3, f16 = ML4, f17 = ML6, f18 = ML5)
+
+fa.result26 = fa(select(Data,(99:118),-`Q14m6`,-`Q15m1`,-`Q14m5`,-`Q15m2`,-`Q14m9`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+bb = fa.result26$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f21 = ML5, f22 = ML2, f23 = ML1, f24 = ML4, f25 = ML3)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+Data = cbind(Data,test)
+Data = rename(Data, f31 = ML1, f32 = ML3, f33 = ML2)
+
+fa12 = as.data.frame((Data$f31 + Data$f32 + Data$f33)/3)
+Data = cbind(Data,fa12)
+Data = rename(Data, f41 = 151)
+
+rpca=prcomp(x= select(Data,(88:96)), scale=F)
+pca1 = rpca$x
+pca1 = as.data.frame(pca1)
+Data = cbind(Data,pca1)
+
+
+g = kmeans(select(Data,f11,f12,f13,f14,f15,f16,f17,f18),6,algorithm = "Hartigan-Wong", iter.max = 1000)
+Data = cbind(Data,g$cluster)
+Data = rename(Data, C = 'g$cluster')
+
+
+```
+
+## 分析
+
+### 構成概念妥当性の検証
+
+
+#### ファン心理
+
+```{r}
+fa.result15 = fa(select(Data,(15:87),-Q5m8,-Q9m10,-Q10m9,-Q10m4,-Q8m6,-Q11m4,-Q11m3,-Q11m2,-Q8m5,-Q8m4,-Q11m1,-Q8m3,-Q8m2,-Q10m10,-Q9m4),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa.result15$loadings, "F1.csv")
+```
+
+
+```{r}
+#ファン心理
+alpha1 = select(Data,"Q5m1","Q5m2","Q5m3","Q5m4","Q5m5","Q5m6","Q5m7","Q5m9","Q5m10","Q6m1","Q6m2","Q6m3") %>% alpha()
+alpha1$total
+
+alpha2 = select(Data,"Q6m4","Q6m5","Q6m6","Q6m7","Q6m8","Q6m9","Q6m10","Q7m1","Q7m2","Q7m3","Q7m4","Q7m5","Q7m6") %>% alpha()
+alpha2$total
+
+alpha3 = select(Data,"Q8m7","Q8m8","Q8m9","Q8m10","Q9m1","Q9m2","Q9m3") %>% alpha()
+alpha3$total
+
+alpha4 = select(Data,"Q11m5","Q11m6","Q11m7","Q11m8","Q11m9","Q11m10","Q8m1") %>% alpha()
+alpha4$total
+
+alpha5 = select(Data,"Q9m5","Q9m6","Q9m7","Q9m8","Q9m9","Q10m1","Q10m2","Q10m3") %>% alpha()
+alpha5$total
+
+
+alpha6 = select(Data,"Q7m7","Q7m8","Q7m9","Q7m10") %>% alpha()
+alpha6$total
+
+alpha7 = select(Data,"Q12m1","Q12m2","Q12m3") %>% alpha()
+alpha7$total
+
+alpha8 = select(Data,"Q10m5","Q10m6","Q10m7","Q10m8") %>% alpha()
+alpha8$total
+
+
+```
+
+
+```{r}
+model_f1 = '
+
+a =~ Q6m8 + Q6m5 + Q6m6 + Q6m9 + Q6m7 + Q7m2 + Q7m1 + Q6m10 + Q7m5 + Q6m4 + Q7m6 + Q7m4 + Q7m3
+
+b =~ Q5m3 + Q5m2 + Q5m7 + Q5m5 + Q5m6 + Q5m4 + Q5m1 + Q5m10 + Q5m9 + Q6m1 + Q6m2 + Q6m3
+
+c =~ Q8m8 + Q8m7 + Q9m1 + Q8m9 + Q8m10 + Q9m2 + Q9m3
+
+d =~ Q11m9 + Q11m10 + Q11m8 + Q11m7 + Q11m5 + Q11m6 + Q8m1
+
+e =~ Q9m7 + Q9m6 + Q9m8 + Q9m5 + Q9m9 + Q10m2 + Q10m1 + Q10m3
+
+f =~ Q12m1 + Q12m2 + Q12m3
+
+g =~ Q7m8 + Q7m9 + Q7m7 + Q7m10
+
+h =~ Q10m6 + Q10m5 + Q10m7 + Q10m8
+
+'
+
+fit_f1 = sem(model = model_f1,data = Data,std.lv = T)
+summary(fit_f1)
+fitMeasures(fit_f1,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+#### ファン行動
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q14m7,-Q14m8,-Q14m9,-Q14m10,-Q14m3, -Q14m6),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "F2.csv")
+```
+
+```{r}
+alpha1 = select(Data,Q14m1,Q14m2,Q14m4,Q14m5) %>% alpha()
+alpha1$total
+
+alpha2 = select(Data,Q15m1,Q15m2,Q15m3,Q15m4) %>% alpha()
+alpha2$total
+
+alpha3 = select(Data,Q15m5, Q15m6, Q15m7, Q15m8, Q15m9) %>% alpha()
+alpha3$total
+```
+
+
+```{r}
+model_f2 = '
+
+a =~ Q14m1 + Q14m2 + Q14m4 + Q14m5
+
+
+b =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+
+
+c =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m9
+
+
+'
+
+fit_f2 = sem(model = model_f2,data = Data,std.lv = T)
+summary(fit_f2)
+fitMeasures(fit_f2,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+#### 顧客満足度
+
+```{r}
+a1 = fa(select(Data,(119:130), -Q16m1,-Q16m2,-Q16m3,-Q16m6,-Q17m1,-Q17m4),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "lo2.csv")
+```
+
+```{r}
+model_l = '
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+'
+
+fit_l = sem(model = model_l,data = Data, std.lv = T)
+summary(fit_l)
+fitMeasures(fit_l,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+alpha_l1 = select(Data,Q17m2, Q17m3)%>% alpha()
+alpha_l1$total
+```
+```{r}
+alpha_l2 = select(Data,Q17m5, Q17m6)%>% alpha()
+alpha_l2$total
+```
+
+```{r}
+alpha_l3 = select(Data,Q16m4, Q16m5)%>% alpha()
+alpha_l3$total
+```
+
+
+### ロイヤリティ
+
+```{r}
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa1$loadings, "L2.csv")
+
+```
+
+```{r}
+alpha_21 = select(Data,Q12m4, Q12m5, Q12m6)%>% alpha()
+alpha_21$total
+```
+
+```{r}
+alpha_22 = select(Data,Q12m7, Q12m8, Q12m9)%>% alpha()
+alpha_22$total
+```
+
+```{r}
+alpha_23 = select(Data,Q12m10, Q13m1, Q13m2)%>% alpha()
+alpha_23$total
+```
+
+```{r}
+model41 = '
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+'
+
+fit41 = cfa(model = model41,data = Data)
+summary(fit41)
+
+fitMeasures(fit41,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+### ロイヤリティとファン心理の相関係数
+
+ファン心理とロイヤリティの相関係数
+```{r}
+a = (Data$f11 + Data$f12 + Data$f13 + Data$f14 + Data$f15 + Data$f16 + Data$f17 + Data$f18)/8
+a = as.data.frame(a)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+b = (test$ML1 + test$ML3 + test$ML2)/3
+b = as.data.frame(b)
+
+#愛着・認知・誇り
+
+ab = cbind(Data$f11, Data$f12, Data$f13, Data$f14, Data$f15, Data$f16, Data$f17, Data$f18, test$ML1, test$ML3, test$ML2)
+
+cor(a, b)
+
+ab = cor(ab)
+write.csv(ab,"ab.csv")
+
+```
+
+### ロイヤリティとWTP・年間利用金額の相関係数
+
+#### ロイヤリティ＊WTP
+
+全体
+```{r}
+Data_t = cbind(Data,b)
+cc = Data_t %>% select('Q31(FA)')
+dd = Data_t %>% select('b')
+cor(cc,dd)
+
+
+```
+ミュージシャンファンのロイヤリティと年間利用金額の相関係数
+```{r}
+Data_t = cbind(Data,b)
+c = Data_t %>% filter(group == "1") %>% select('Q31(FA)')
+d = Data_t %>% filter(group == "1") %>% select('b')
+cor(c,d)
+
+
+```
+
+スポーツ選手
+```{r}
+
+e = Data_t %>% filter(group == "2") %>% select('Q31(FA)')
+f = Data_t %>% filter(group == "2") %>% select('b')
+cor(e,f)
+```
+
+
+俳優
+```{r}
+
+g = Data_t %>% filter(group == "3") %>% select('Q31(FA)')
+h = Data_t %>% filter(group == "3") %>% select('b')
+cor(g,h)
+
+```
+
+アイドル
+```{r}
+i = Data_t %>% filter(group == "4") %>% select('Q31(FA)')
+j = Data_t %>% filter(group == "4") %>% select('b')
+cor(i,j)
+```
+
+お笑いタレント
+```{r}
+
+k = Data_t %>% filter(group == "5") %>% select('Q31(FA)')
+l = Data_t %>% filter(group == "5") %>% select('b')
+cor(k,l)
+
+```
+
+#### ロイヤリティ＊年間利用金額
+
+全体
+```{r}
+Data_t = cbind(Data,b)
+cc = Data_t %>% select('Q41(FA)')
+dd = Data_t %>% select('b')
+cor(cc,dd)
+
+
+```
+ミュージシャン
+```{r}
+Data_t = cbind(Data,b)
+c = Data_t %>% filter(group == "1") %>% select('Q41(FA)')
+d = Data_t %>% filter(group == "1") %>% select('b')
+cor(c,d)
+
+
+```
+
+スポーツ選手
+```{r}
+
+e = Data_t %>% filter(group == "2") %>% select('Q41(FA)')
+f = Data_t %>% filter(group == "2") %>% select('b')
+cor(e,f)
+```
+
+俳優
+```{r}
+
+g = Data_t %>% filter(group == "3") %>% select('Q41(FA)')
+h = Data_t %>% filter(group == "3") %>% select('b')
+cor(g,h)
+
+```
+
+アイドル
+```{r}
+i = Data_t %>% filter(group == "4") %>% select('Q41(FA)')
+j = Data_t %>% filter(group == "4") %>% select('b')
+cor(i,j)
+```
+お笑いタレント
+```{r}
+
+k = Data_t %>% filter(group == "5") %>% select('Q41(FA)')
+l = Data_t %>% filter(group == "5") %>% select('b')
+cor(k,l)
+
+```
+
+
+
+### 構造方程式モデリングを用いたロイヤリティとファン行動の関係モデル
+
+
+
+#### 応援ロイヤリティ・ロイヤリティとファン行動の関係
+
+```{r}
+mo6 = '
+
+
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+
+#応援ロイヤリティ
+r1 =~ Q13m4 + Q13m5
+
+r2 =~ r21 + r22 + r23
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+
+#ファン行動
+f1 =~ Q14m1 + Q14m2 + Q14m4 + Q14m5
+
+f2 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+
+f3 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m9
+
+
+r1 ~ b
+r2 ~ b
+
+
+
+
+
+f1 ~ r1 + r2
+f2 ~ r1 + r2
+f3 ~ r1 + r2
+
+
+
+'
+```
+
+
+
+```{r}
+
+ww = sem(model = mo7,data = Data)
+summary(ww, standardized=T)
+fitMeasures(ww,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+#### ロイヤリティを構成する愛情・誇り・一体感とファン行動の関係
+
+```{r}
+
+modelaaaa = '
+
+
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+
+f1 =~ Q14m1 + Q14m2 + Q14m4 + Q14m5
+
+
+f2 =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+
+
+f3 =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m9
+
+
+
+f1 ~ r21 + r22 + r23
+f2 ~ r21 + r22 + r23
+f3 ~ r21 + r22 + r23
+
+
+r21 ~~ r22
+r21 ~~ r23
+r22 ~~ r23
+
+f1 ~~ f2
+f1 ~~ f3
+f2 ~~ f3
+
+Q14m4	~~ Q14m5
+Q14m4	~~ Q15m1
+Q15m4	~~ Q15m5
+Q15m5	~~ Q15m6
+
+'
+
+```
+
+```{r}
+
+e = sem(model = modelaaaa,data = Data,std.ov = TRUE)
+summary(e, standardized=T)
+fitMeasures(e,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+#### ファン対象の職業によるロイヤリティとファン行動の関係性の差異
+
+```{r}
+
+out = measurementInvariance(model = modelaaaa,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+
+```
+
+```{r}
+
+fff = sem(model = modelaaaa,data = Data, group = "group", group.equal = c("loadings", "intercepts"))
+summary(fff, standardized=T)
+fitMeasures(fff,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+```
+
+
+

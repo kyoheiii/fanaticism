@@ -1,0 +1,716 @@
+---
+title: "構成概念妥当性の検証"
+author: "Kyohei ITO"
+date: "1/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(lavaan)
+library(semTools)
+library(semPlot)
+
+
+```
+
+```{r}
+set.seed(11111)
+Data_m =  read_csv("/home/rstudio/fanaticism/data/musician.csv", locale = locale(encoding = "CP932"))
+Data_s =  read_csv("/home/rstudio/fanaticism/data/sport.csv", locale = locale(encoding = "CP932"))
+Data_h =  read_csv("/home/rstudio/fanaticism/data/haiyu.csv", locale = locale(encoding = "CP932"))
+Data_i =  read_csv("/home/rstudio/fanaticism/data/idle.csv",locale = locale(encoding = "CP932"))
+Data_o =  read_csv("/home/rstudio/fanaticism/data/owarai.csv",locale = locale(encoding = "CP932"))
+
+#group列の追加
+
+Data_m = mutate(Data_m, group = 1)
+Data_s = mutate(Data_s, group = 2)
+Data_h = mutate(Data_h, group = 3)
+Data_i = mutate(Data_i, group = 4)
+Data_o = mutate(Data_o, group = 5)
+
+#DataFrameの結合
+
+Data = rbind(Data_m, Data_s, Data_h, Data_i, Data_o)
+
+#ダミー項目の削除
+
+Data = select(Data, -"Q.13-m3")
+
+
+#逆転項目の修正
+
+Data = mutate(Data, `Q.5-m8` = (8-`Q.5-m8`),
+                `Q.8-m6` = (8-`Q.8-m6`),
+                `Q.9-m10` = (8-`Q.9-m10`),
+                `Q.16-m3` = (8-`Q.16-m3`),
+                `Q.17-m1` = (8-`Q.17-m1`))
+
+#不必要な項目の削除
+
+Data = select(Data, -(131:142))
+
+
+colnames(Data) = str_replace(colnames(Data), '-', '')
+colnames(Data) = str_replace(colnames(Data), '\\.', '')
+
+# ファン心理
+fa.result15 = fa(select(Data,(15:87),-`Q5m8`,-`Q9m10`,-`Q10m9`,-`Q10m4`,-`Q8m6`,-`Q11m4`,-`Q11m3`,-`Q11m2`,-`Q8m5`,-`Q8m4`,-`Q11m1`,-`Q8m3`,-`Q8m2`,-`Q10m10`,-`Q9m4`),nfactors=8,fm="ml",rotate="promax",scores=TRUE)
+aa = fa.result15$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f11 = ML2, f12 = ML1, f13 = ML8, f14 = ML7, f15 = ML3, f16 = ML4, f17 = ML6, f18 = ML5)
+
+fa.result26 = fa(select(Data,(99:118),-`Q14m6`,-`Q15m1`,-`Q14m5`,-`Q15m2`,-`Q14m9`),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+bb = fa.result26$scores
+Data = cbind(Data,aa)
+Data = rename(Data, f21 = ML5, f22 = ML2, f23 = ML1, f24 = ML4, f25 = ML3)
+
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+test = fa1$scores
+test = as.data.frame(test)
+Data = cbind(Data,test)
+Data = rename(Data, f31 = ML1, f32 = ML3, f33 = ML2)
+
+fa12 = as.data.frame((Data$f31 + Data$f32 + Data$f33)/3)
+Data = cbind(Data,fa12)
+Data = rename(Data, f41 = 151)
+
+rpca=prcomp(x= select(Data,(88:96)), scale=F)
+pca1 = rpca$x
+pca1 = as.data.frame(pca1)
+Data = cbind(Data,pca1)
+
+
+g = kmeans(select(Data,f11,f12,f13,f14,f15,f16,f17,f18),6,algorithm = "Hartigan-Wong", iter.max = 1000)
+Data = cbind(Data,g$cluster)
+Data = rename(Data, C = 'g$cluster')
+
+
+```
+
+
+顧客満足度
+
+4因子
+```{r}
+a1 = fa(select(Data,(119:130)),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a11.csv")
+
+
+a2 = fa(select(Data,(119:130),-Q17m6),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a2$loadings, "a12.csv")
+
+a3 = fa(select(Data,(119:130),-Q16m6,-Q17m6),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a3$loadings, "a13.csv")
+
+a4 = fa(select(Data,(119:130),-Q16m6,-Q17m6,-Q16m2),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a4$loadings, "a14.csv")
+```
+
+```{r}
+a1 = fa(select(Data,(119:130),-Q16m3,-Q17m1),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a31.csv")
+```
+
+4因子
+```{r}
+a1 = fa(select(Data,(119:130),-Q16m1,-Q17m1,-Q16m3),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a42.csv")
+```
+
+
+4因子
+```{r}
+a1 = fa(select(Data,(119:130),-Q16m6,-Q17m1,-Q16m3),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a52.csv")
+```
+
+4因子
+```{r}
+a1 = fa(select(Data,(119:130)),nfactors=4,fm="ml",rotate="varimax",scores=TRUE)
+write.csv(a1$loadings, "a61.csv")
+
+a1 = fa(select(Data,(119:130),-Q17m6),nfactors=4,fm="ml",rotate="varimax",scores=TRUE)
+write.csv(a1$loadings, "a62.csv")
+
+a1 = fa(select(Data,(119:130),-Q17m6,-Q17m5),nfactors=4,fm="ml",rotate="varimax",scores=TRUE)
+write.csv(a1$loadings, "a63.csv")
+
+a1 = fa(select(Data,(119:130),-Q17m6,-Q17m5,-Q17m2),nfactors=4,fm="ml",rotate="varimax",scores=TRUE)
+write.csv(a1$loadings, "a64.csv")
+```
+
+
+
+
+3因子（Q16m3,Q17m1）
+```{r}
+a1 = fa(select(Data,(119:130),-Q16m3,-Q17m1),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a21.csv")
+
+a2 = fa(select(Data,(119:130),-Q16m3,-Q17m1,-Q17m4),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a2$loadings, "a22.csv")
+
+a3 = fa(select(Data,(119:130),-Q16m6,-Q16m3,-Q17m1,-Q17m4),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a3$loadings, "a23.csv")
+
+a4 = fa(select(Data,(119:130),-Q16m6,-Q16m3,-Q17m1,-Q17m4,-Q16m1),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a4$loadings, "a24.csv")
+```
+
+```{r}
+a1 = fa(select(Data,(119:130),-Q16m3,-Q17m1,-Q16m1),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a72.csv")
+
+
+```
+
+```{r}
+a1 = fa(select(Data,(119:130),-Q17m1,-Q16m3,-Q16m1),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a83.csv")
+```
+
+
+```{r}
+a1 = fa(select(Data,(119:130),-Q17m1,-Q16m3,-Q16m1),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a93.csv")
+```
+
+```{r}
+a1 = fa(select(Data,(119:130),-Q17m1,-Q16m3,-Q16m2,-Q16m6),nfactors=1,fm="ml",rotate="promax",scores=TRUE)
+write.csv(a1$loadings, "a105.csv")
+```
+
+
+
+
+クロんバック
+
+```{r}
+alpha14 = select(Data,Q17m3,Q17m6,Q17m2,Q17m5,Q16m1)%>% alpha()
+alpha14$total
+```
+
+```{r}
+alpha14 = select(Data,Q16m3,Q17m1)%>% alpha()
+alpha14$total
+```
+
+```{r}
+alpha14 = select(Data,Q16m4,Q16m5,Q17m4)%>% alpha()
+alpha14$total
+
+```
+
+
+
+```{r}
+model1 = '
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+c ~ a 
+b ~ c + a
+
+Q17m5	~~ Q16m4
+
+
+'
+model2 = '
+#顧客期待
+a1 =~ Q16m1 + Q16m2 + Q16m3 
+#知覚価値
+a2 =~ Q16m4 + Q16m5 + Q16m6
+#知覚価値
+a3 =~ Q17m2 + Q17m3
+#顧客満足
+a4 =~ Q17m4 + Q17m5 + Q17m6
+'
+
+model3= '
+a =~ Q16m1 + Q17m2 + Q17m3
+b =~ Q16m4 + Q16m5 + Q17m4
+c =~ Q17m5 + Q17m6
+d =~ Q16m2 + Q16m3
+
+
+'
+
+
+model4= '
+a =~ Q17m2 + Q17m3
+b =~ Q16m4 + Q16m5 + Q17m4
+c =~ Q17m5 + Q17m6
+d =~ Q16m2 + Q16m6
+
+
+'
+
+model5 = '
+a =~ Q17m2 + Q17m3 + Q17m5 + Q17m6
+b =~ Q16m4 + Q16m5 + Q17m4
+c =~ Q16m2 + Q16m6
+'
+
+model6 = '
+a =~ Q17m2 + Q17m3
+b =~ Q17m5 + Q17m6
+c =~ Q16m4 + Q16m5
+
+Q17m5	~~ Q16m4
+
+'
+
+model7 = '
+a =~ Q17m2 + Q17m3 + Q17m5 + Q17m6
+b =~ Q16m4 + Q16m5 + Q17m4
+c =~ Q16m2 + Q16m6
+'
+
+model8 = '
+a =~ Q17m5 + Q17m6
+b =~ Q16m4 + Q16m5 
+c =~ Q16m2 + Q16m6
+d =~ Q17m1 + Q16m3
+'
+
+model9 = '
+a =~ Q17m2 + Q17m3 + Q17m4 + Q17m5 + Q17m6
+
+'
+
+```
+
+```{r}
+fit1 = sem(model = model1,data = Data)
+summary(fit1)
+
+fit2 = cfa(model = model2,data = Data)
+summary(fit2)
+
+fit3 = cfa(model = model3,data = Data)
+summary(fit3)
+
+fit4 = cfa(model = model4,data = Data)
+summary(fit4)
+
+fit5 = cfa(model = model5,data = Data)
+summary(fit5)
+
+fit6 = cfa(model = model6,data = Data)
+summary(fit6)
+
+fit7 = cfa(model = model7,data = Data)
+summary(fit7)
+
+fit8 = cfa(model = model8,data = Data)
+summary(fit8)
+
+fit9 = cfa(model = model9,data = Data)
+summary(fit9)
+```
+
+```{r}
+fitMeasures(fit1,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+arrange(modindices(fit1),-mi)
+
+fitMeasures(fit2,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit3,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit4,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit5,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit6,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+arrange(modindices(fit6),-mi)
+
+fitMeasures(fit8,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit9,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+
+
+ファン行動
+
+```{r}
+b1 = fa(select(Data,(99:118),-Q15m9,-Q14m10,-Q14m6,-Q14m3,-Q14m7),nfactors=5,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b1$loadings, "b6.csv")
+```
+
+```{r}
+b2 = fa(select(Data,(99:118),-Q14m3,-Q14m8,-Q14m4,-Q14m9),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b2$loadings, "b12.csv")
+```
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q14m6,-Q14m8,-Q14m3,-Q14m9,-Q14m4),-Q14m4,nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b27.csv")
+```
+
+```{r}
+b3 = fa(select(Data,(99:118)),nfactors=2,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b31.csv")
+```
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q14m3,-Q14m8,-Q14m4,-Q15m3,-Q14m9),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b46.csv")
+```
+
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q15m9,-Q14m3,-Q15m3,-Q14m8,-Q14m9,-Q14m4),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b67.csv")
+```
+
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q14m3,-Q15m3,-Q14m7),nfactors=2,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b53.csv")
+```
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q14m7,-Q14m8,-Q14m9,-Q14m10,-Q14m3),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b76.csv")
+```
+
+```{r}
+b3 = fa(select(Data,(99:118),-Q15m5,-Q15m6, -Q15m7, -Q15m8, -Q15m10),nfactors=4,fm="ml",rotate="promax",scores=TRUE)
+write.csv(b3$loadings, "b83.csv")
+```
+
+
+```{r}
+model21 = '
+
+a =~ Q14m1 + Q14m2
+b =~ Q14m4 + Q14m5
+c =~ Q14m8 + Q14m9
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+'
+
+model22 = '
+
+a =~ Q14m1 + Q14m2 + Q14m3
+b =~ Q14m4 + Q14m5
+c =~ Q14m7 + Q14m8 + Q14m9
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+'
+
+model23 = '
+
+a =~ Q14m1 + Q14m2
+b =~ Q14m4 + Q14m5
+c =~ Q14m7 + Q14m8 + Q14m9
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+'
+
+model24 = '
+
+a =~ Q14m1 + Q14m2
+b =~ Q14m4 + Q14m5
+c =~ Q14m7 + Q14m8 + Q14m9
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10 + Q14m6
+
+'
+
+model25 = '
+
+a =~ Q14m1 + Q14m2 + Q14m5
+c =~ Q14m7 + Q14m10
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10 + Q14m6
+
+'
+
+model26 = '
+
+a =~ Q14m1 + Q14m2 + Q14m5
+c =~ Q14m7 + Q14m10
+d =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+e =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+'
+
+model27 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m9 + Q15m2 + Q14m6 + Q15m10 + Q14m7 + Q15m9 + Q14m3
+
+c =~ Q15m3 + Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+
+model28 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q15m2 + Q14m6 + Q15m10 + Q15m9
+
+b =~ Q14m1 + Q14m2 + Q14m5
+
+c =~ Q14m10 + Q15m1 + Q14m7
+'
+
+model29 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2 + Q14m6 + Q15m10 + Q15m9
+
+c =~ Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+model30 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + + Q14m8 + Q15m4 + Q14m9 + Q15m2 + Q14m6 + Q15m10 + Q14m7 + Q15m9 + Q14m3
+
+c =~ Q15m3 + Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+model31 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2 + Q14m6 + Q15m10
+
+c =~ Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+model32 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2 + Q14m6
+
+c =~ Q14m10 + Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+model33 = '
+
+a =~ Q15m5 + Q15m7 + Q15m6 + Q15m8 + Q15m4 + Q14m8 + Q14m9 + Q15m2
+
+c =~ Q15m1 + Q14m4 + Q14m2 + Q14m1 + Q14m5
+
+'
+
+model34 = '
+
+a =~ Q15m2 + Q15m4 + Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m10
+
+b =~ Q14m7 + Q14m10 + Q15m1
+
+c =~ Q14m1 + Q14m5 + Q14m2
+'
+
+model35 = '
+
+a =~ Q14m1 + Q14m2 + Q14m4 + Q14m5
+
+
+b =~ Q15m1 + Q15m2 + Q15m3 + Q15m4
+
+
+c =~ Q15m5 + Q15m6 + Q15m7 + Q15m8 + Q15m9
+
+'
+
+```
+
+```{r}
+fit1 = cfa(model = model21,data = Data)
+summary(fit1)
+
+fit2 = cfa(model = model22,data = Data)
+summary(fit2)
+
+fit3 = cfa(model = model23,data = Data)
+summary(fit3)
+
+fit4 = cfa(model = model24,data = Data)
+summary(fit4)
+
+fit5 = cfa(model = model25,data = Data)
+summary(fit5)
+
+fit6 = cfa(model = model26,data = Data)
+summary(fit6)
+
+fit7 = cfa(model = model27,data = Data)
+summary(fit7)
+
+fit8 = cfa(model = model28,data = Data)
+summary(fit8)
+
+fit9 = cfa(model = model29,data = Data)
+summary(fit9)
+
+fit10 = cfa(model = model30,data = Data)
+summary(fit10)
+
+fit11 = cfa(model = model31,data = Data)
+summary(fit11)
+
+fit12 = cfa(model = model32,data = Data)
+summary(fit12)
+
+fit13 = cfa(model = model33,data = Data)
+summary(fit13)
+
+fit14 = cfa(model = model34,data = Data)
+summary(fit14)
+
+fit15 = cfa(model = model35,data = Data)
+summary(fit14)
+
+```
+
+```{r}
+arrange(modindices(fit1),-mi) %>% filter(op == "~~")
+parameterestimates(fit1)
+```
+
+```{r}
+out = measurementInvariance(model = model21,data = Data,group = "group",strict = T,quiet = T)
+summary(compareFit(out))
+```
+
+
+
+
+```{r}
+fitMeasures(fit1,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit2,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit3,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit4,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit5,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit6,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit7,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit8,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit9,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit10,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit11,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit12,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit13,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit14,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit15,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+応援ロイヤリティ
+
+```{r}
+model31 = '
+a =~ Q13m4 + Q13m5
+'
+
+fit31 = cfa(model = model31,data = Data)
+summary(fit31)
+```
+
+
+
+
+ロイヤリティ
+
+```{r}
+rpca=prcomp(x= select(Data,(88:96)), scale=F)
+pca1 = rpca$x
+summary(rpca)$importance
+```
+
+```{r}
+fa1 = fa(select(Data,(88:96)),nfactors=3,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa1$loadings, "d1.csv")
+
+fa2 = fa(select(Data,(88:96)),nfactors=1,fm="ml",rotate="promax",scores=TRUE)
+write.csv(fa2$loadings, "d2.csv")
+```
+
+```{r}
+g1 = fa(select(Data,(152:160)),nfactors=1,fm="ml",rotate="promax",scores=TRUE)
+write.csv(g1$loadings, "d31.csv")
+```
+
+
+```{r}
+model41 = '
+#一体感
+r21 =~ Q12m4 + Q12m5 + Q12m6
+#愛着
+r22 =~ Q12m7 + Q12m8 + Q12m9
+#誇り
+r23 =~ Q12m10 + Q13m1 + Q13m2
+
+'
+
+model42 = '
+r21 =~ Q12m4 + Q12m5 + Q12m6 + Q12m7 + Q12m8 + Q12m9 + Q12m10 + Q13m1 + Q13m2
+'
+
+model43 = '
+r21 =~ PC1 + PC2 + PC3
+'
+
+```
+
+```{r}
+fit41 = cfa(model = model41,data = Data)
+summary(fit41)
+
+fit42 = cfa(model = model42,data = Data)
+summary(fit42)
+
+fit43 = cfa(model = model43,data = Data)
+summary(fit43)
+```
+
+```{r}
+fitMeasures(fit41,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit42,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+
+fitMeasures(fit43,c("chisq", "df", "pvalue","srmr","tli","cfi","rmsea","aic","bic"))
+```
+
+```{r}
+f = cor(select(Data,(99:118),(88:96)))
+
+write.csv(f, "e1.csv")
+
+f = cor(select(Data,(88:96)))
+
+write.csv(f, "e2.csv")
+
+f = cor(select(Data,(99:118),(88:96)))
+
+write.csv(f, "e3.csv")
+```
+
