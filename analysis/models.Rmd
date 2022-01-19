@@ -218,7 +218,7 @@ Q14m8	~~ Q15m8
 
 ```{r}
 
-f3 = sem(model = m3, data = Data, estimator = "WLSMV", std.lv = TRUE)
+f3 = sem(model = m3, data = Data, estimator = "ML", std.lv = TRUE)
 
 summary(f3)
 
@@ -327,10 +327,10 @@ a4 ~ a2 + a3
 r1 ~ a4
 r2 ~ a4
 
-f1 ~ r2
+f1 ~ r1 + r2
 f2 ~ r1 + r2
 f3 ~ r1 + r2
-f4 ~ r2
+f4 ~ r1 + r2
 f5 ~ r1 + r2
 
 r1 ~~ r2
